@@ -39,6 +39,14 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/camera_capture_button" />
 
+    <Button
+        android:id="@+id/flip_camera"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Flip Camera"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <androidx.camera.view.PreviewView
         android:id="@+id/viewFinder"
         android:layout_width="match_parent"

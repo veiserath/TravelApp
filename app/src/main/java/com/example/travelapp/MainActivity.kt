@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
             intent.putExtra("index", 0)
             startActivity(intent)
         }
-        settings_button.setOnClickListener{
+        flip_camera.setOnClickListener{
             cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA){
                 CameraSelector.DEFAULT_FRONT_CAMERA
             } else {

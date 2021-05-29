@@ -1,7 +1,10 @@
 package com.example.travelapp
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +13,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat.startActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.example.travelapp.data.PhotoModel
+import kotlinx.android.synthetic.main.activity_photo_details.*
 
 class PhotoAdapter : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
 
@@ -27,7 +31,7 @@ class PhotoAdapter : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
 
         override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
             val currentItem = userList[position]
-            holder.category.setImageBitmap(BitmapFactory.decodeFile(currentItem.photoUri))
+            holder.category.setImageBitmap(setImage(currentItem.photoUri))
             holder.location.text = currentItem.locationData
             holder.date.text = currentItem.date
             holder.comment.text = currentItem.comment
@@ -41,6 +45,31 @@ class PhotoAdapter : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
 //
 //            }
         }
+    private fun setImage(photoUri: String) : Bitmap? {
+        val bitmap = BitmapFactory.decodeFile(photoUri)
+        val ei = ExifInterface(photoUri)
+        val orientation: Int = ei.getAttributeInt(
+            ExifInterface.TAG_ORIENTATION,
+            ExifInterface.ORIENTATION_UNDEFINED
+        )
+        val rotatedBitmap: Bitmap? = when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> rotateImage(bitmap, 90F)
+            ExifInterface.ORIENTATION_ROTATE_180 -> rotateImage(bitmap, 180F)
+            ExifInterface.ORIENTATION_ROTATE_270 -> rotateImage(bitmap, 270F)
+            ExifInterface.ORIENTATION_NORMAL -> bitmap
+            else -> bitmap
+        }
+        return rotatedBitmap
+    }
+
+    private fun rotateImage(source: Bitmap, angle: Float): Bitmap? {
+        val matrix = Matrix()
+        matrix.postRotate(angle)
+        return Bitmap.createBitmap(
+            source, 0, 0, source.width, source.height,
+            matrix, true
+        )
+    }
     fun setData(photoModel: List<PhotoModel>) {
         userList = photoModel
         notifyDataSetChanged()
