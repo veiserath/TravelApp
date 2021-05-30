@@ -7,12 +7,15 @@ import android.graphics.Matrix
 import android.location.Geocoder
 import android.media.ExifInterface
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.travelapp.data.PhotoModel
 import com.example.travelapp.data.PhotoViewModel
 import kotlinx.android.synthetic.main.activity_photo_details.*
+import java.io.FileOutputStream
+import java.io.IOException
 import java.time.LocalDate
 import java.util.*
 
@@ -28,8 +31,8 @@ class AddCommentActivity : AppCompatActivity() {
         if (intent.getSerializableExtra("photoUri") != null) {
             var photoUri = intent.getSerializableExtra("photoUri") as String
             photoUri = photoUri.split("///")[1]
+
             setImage(photoUri)
-            globalPhotoUri = photoUri
         }
 
         mPhotoViewModel = ViewModelProvider(this).get(PhotoViewModel::class.java)
@@ -49,8 +52,6 @@ class AddCommentActivity : AppCompatActivity() {
         val geoCoder = Geocoder(baseContext, Locale.getDefault())
         val address = geoCoder.getFromLocation(Shared.location!!.latitude, Shared.location!!.longitude, 1)
 
-//        "" + (Shared.location?.latitude ?: "dupa") + " " + (Shared.location?.longitude
-//            ?: "dupcia")
         val user = PhotoModel(0,photoUri, LocalDate.now().toString(), "" + address[0].locality + ", " + address[0].countryName,comment)
         mPhotoViewModel.addUser(user)
         Toast.makeText(this,"Added photo!",Toast.LENGTH_LONG).show()
@@ -61,6 +62,7 @@ class AddCommentActivity : AppCompatActivity() {
     }
     private fun setImage(photoUri: String) {
         val bitmap = BitmapFactory.decodeFile(photoUri)
+//        val newBmp = Bitmap.createScaledBitmap(bitmap, bitmap.width, bitmap.height,true)
         val ei = ExifInterface(photoUri)
         val orientation: Int = ei.getAttributeInt(
             ExifInterface.TAG_ORIENTATION,
@@ -73,7 +75,22 @@ class AddCommentActivity : AppCompatActivity() {
             ExifInterface.ORIENTATION_NORMAL -> bitmap
             else -> bitmap
         }
-        imageViewDetails.setImageBitmap(rotatedBitmap)
+        imageViewDetails.mBitmap = rotatedBitmap!!
+
+
+
+        imageViewDetails.text = getLocationFromGPSCoordinates()
+        imageViewDetails.invalidate()
+        val newPhotoUri = photoUri.split(".jpg")
+        val editedPhotoUri = newPhotoUri[0] + "edited" + ".jpeg"
+        saveImage(editedPhotoUri, imageViewDetails.mBitmap)
+        globalPhotoUri = editedPhotoUri
+    }
+
+    private fun getLocationFromGPSCoordinates() : String {
+        val geoCoder = Geocoder(baseContext, Locale.getDefault())
+        val address = geoCoder.getFromLocation(Shared.location!!.latitude, Shared.location!!.longitude, 1)
+        return "" + address[0].locality + ", " + address[0].countryName
     }
 
     private fun rotateImage(source: Bitmap, angle: Float): Bitmap? {
@@ -83,5 +100,14 @@ class AddCommentActivity : AppCompatActivity() {
             source, 0, 0, source.width, source.height,
             matrix, true
         )
+    }
+    private fun saveImage(filename: String, bmp: Bitmap) {
+        try {
+            FileOutputStream(filename).use { out ->
+                bmp.compress(Bitmap.CompressFormat.JPEG, 100, out) // bmp is your Bitmap instance
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 }

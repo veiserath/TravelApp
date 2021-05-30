@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".AddCommentActivity">
 
-    <ImageView
+    <com.example.travelapp.CanvasView
         android:id="@+id/imageViewDetails"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
