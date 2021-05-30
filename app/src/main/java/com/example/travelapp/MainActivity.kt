@@ -35,9 +35,11 @@ class MainActivity : AppCompatActivity() {
 
     var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-    lateinit var savedUri:Uri
+    lateinit var savedUri: Uri
 
     private val locClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
+
+    private val FINE_LOCATION_ACCESS_REQUEST_CODE = 10001
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,7 +50,8 @@ class MainActivity : AppCompatActivity() {
             startCamera()
         } else {
             ActivityCompat.requestPermissions(
-                    this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
+                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+            )
         }
 
         // Set up the listener for take photo button
@@ -57,12 +60,12 @@ class MainActivity : AppCompatActivity() {
 
         }
         settings_button.setOnClickListener {
-            var intent = Intent(applicationContext,SettingsActivity::class.java)
+            var intent = Intent(applicationContext, SettingsActivity::class.java)
             intent.putExtra("index", 0)
             startActivity(intent)
         }
-        flip_camera.setOnClickListener{
-            cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA){
+        flip_camera.setOnClickListener {
+            cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) {
                 CameraSelector.DEFAULT_FRONT_CAMERA
             } else {
                 CameraSelector.DEFAULT_BACK_CAMERA
@@ -70,8 +73,8 @@ class MainActivity : AppCompatActivity() {
 
             startCamera()
         }
-        all_photos_button.setOnClickListener{
-            val intent = Intent(applicationContext,PhotosActivity::class.java)
+        all_photos_button.setOnClickListener {
+            val intent = Intent(applicationContext, PhotosActivity::class.java)
             startActivity(intent)
         }
 
@@ -79,18 +82,25 @@ class MainActivity : AppCompatActivity() {
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
+        enableUserLocation()
         requestLoc()
+
+
     }
+
     override fun onRequestPermissionsResult(
-            requestCode: Int, permissions: Array<String>, grantResults:
-            IntArray) {
+        requestCode: Int, permissions: Array<String>, grantResults:
+        IntArray
+    ) {
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
                 startCamera()
             } else {
-                Toast.makeText(this,
-                        "Permissions not granted by the user.",
-                        Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Permissions not granted by the user.",
+                    Toast.LENGTH_SHORT
+                ).show()
                 finish()
             }
         }
@@ -102,9 +112,11 @@ class MainActivity : AppCompatActivity() {
 
         // Create time-stamped output file to hold the image
         val photoFile = File(
-                outputDirectory,
-                SimpleDateFormat(FILENAME_FORMAT, Locale.US
-                ).format(System.currentTimeMillis()) + ".jpg")
+            outputDirectory,
+            SimpleDateFormat(
+                FILENAME_FORMAT, Locale.US
+            ).format(System.currentTimeMillis()) + ".jpg"
+        )
 
         // Create output options object which contains file + metadata
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
@@ -113,34 +125,42 @@ class MainActivity : AppCompatActivity() {
         // been taken
 
         imageCapture.takePicture(
-                outputOptions, ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageSavedCallback {
-            override fun onError(exc: ImageCaptureException) {
-                Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-            }
-
-            override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                savedUri = Uri.fromFile(photoFile)
-                val msg = "Photo capture succeeded: $savedUri"
-                Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                Log.d(TAG, msg)
-                Log.d(TAG,"" + (Shared.location?.latitude ?: "dupa") + " " + (Shared.location?.longitude
-                    ?: "dupcia"))
-                Shared.location?.let {
-                    addGeofence(it)
+            outputOptions,
+            ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onError(exc: ImageCaptureException) {
+                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
                 }
-                val intent = Intent(applicationContext,AddCommentActivity::class.java)
-                intent.putExtra("photoUri", savedUri.toString())
-                startActivity(intent)
-            }
-        })
+
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    Shared.location?.let {
+                        addGeofence(it)
+                    }
+                    savedUri = Uri.fromFile(photoFile)
+                    val msg = "Photo capture succeeded: $savedUri"
+                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+                    Log.d(TAG, msg)
+                    Log.d(
+                        TAG,
+                        "" + (Shared.location?.latitude
+                            ?: "dupa") + " " + (Shared.location?.longitude ?: "dupcia")
+                    )
+                    val intent = Intent(applicationContext, AddCommentActivity::class.java)
+                    intent.putExtra("photoUri", savedUri.toString())
+                    startActivity(intent)
+                }
+            })
     }
+
     @SuppressLint("MissingPermission")
     private fun addGeofence(loci: Location) {
         val pi = PendingIntent.getBroadcast(
             applicationContext,
             1,
-            Intent(this,
-                BroReceiver::class.java),
+            Intent(
+                this,
+                BroReceiver::class.java
+            ),
             PendingIntent.FLAG_UPDATE_CURRENT
         )
         LocationServices.getGeofencingClient(this)
@@ -150,6 +170,7 @@ class MainActivity : AppCompatActivity() {
                 Log.i("Geofence", "Geofence added")
             }
     }
+
     private fun generateRequest(loci: Location): GeofencingRequest {
         val mordo = Geofence.Builder().setExpirationDuration(Geofence.NEVER_EXPIRE)
             .setRequestId(LocalDate.now().toString())
@@ -160,6 +181,20 @@ class MainActivity : AppCompatActivity() {
             .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
             .build()
     }
+    private fun enableUserLocation() {
+        if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+        else {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.ACCESS_FINE_LOCATION)) {
+                ActivityCompat.requestPermissions(this,Array(5) {Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION_ACCESS_REQUEST_CODE)
+            } else {
+                ActivityCompat.requestPermissions(this,Array(5) {Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION_ACCESS_REQUEST_CODE)
+            }
+        }
+    }
+
+
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
@@ -170,13 +205,13 @@ class MainActivity : AppCompatActivity() {
 
             // Preview
             val preview = Preview.Builder()
-                    .build()
-                    .also {
-                        it.setSurfaceProvider(viewFinder.surfaceProvider)
-                    }
+                .build()
+                .also {
+                    it.setSurfaceProvider(viewFinder.surfaceProvider)
+                }
 
             imageCapture = ImageCapture.Builder()
-                    .build()
+                .build()
 
             try {
                 // Unbind use cases before rebinding
@@ -184,9 +219,10 @@ class MainActivity : AppCompatActivity() {
 
                 // Bind use cases to camera
                 cameraProvider.bindToLifecycle(
-                        this, cameraSelector, preview, imageCapture)
+                    this, cameraSelector, preview, imageCapture
+                )
 
-            } catch(exc: Exception) {
+            } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
 
@@ -195,12 +231,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(
-                baseContext, it) == PackageManager.PERMISSION_GRANTED
+            baseContext, it
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun getOutputDirectory(): File {
         val mediaDir = externalMediaDirs.firstOrNull()?.let {
-            File(it, resources.getString(R.string.app_name)).apply { mkdirs() } }
+            File(it, resources.getString(R.string.app_name)).apply { mkdirs() }
+        }
         return if (mediaDir != null && mediaDir.exists())
             mediaDir else filesDir
     }
@@ -210,7 +248,7 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
     }
 
-    private fun requestLoc(){
+    private fun requestLoc() {
 
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -227,11 +265,12 @@ class MainActivity : AppCompatActivity() {
             interval = 1000L
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
-        locClient.requestLocationUpdates(request,object : LocationCallback() {
+        locClient.requestLocationUpdates(request, object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult) {
                 super.onLocationResult(p0)
                 Shared.location = p0.lastLocation
-            } }, Looper.getMainLooper())
+            }
+        }, Looper.getMainLooper())
     }
 
     companion object {

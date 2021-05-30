@@ -1,6 +1,5 @@
 package com.example.travelapp
 
-import android.R.attr.bitmap
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix

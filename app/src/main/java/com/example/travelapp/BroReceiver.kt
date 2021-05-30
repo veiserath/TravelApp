@@ -15,9 +15,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 
 
-@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
 class BroReceiver : BroadcastReceiver() {
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context?, intent: Intent?) {
         Log.d("wejszlo","onReceive")
         val notificationId = 69
@@ -37,7 +35,7 @@ class BroReceiver : BroadcastReceiver() {
         }
         notificationManager.createNotificationChannel(mChannel)
         val builder: NotificationCompat.Builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.sym_def_app_icon)
+//            .setSmallIcon(R.drawable.)
             .setContentTitle("Flashback")
             .setContentText("Remember that?")
 
