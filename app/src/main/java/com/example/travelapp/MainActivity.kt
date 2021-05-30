@@ -4,19 +4,24 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.net.Uri
+import android.os.Build
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
+import com.google.android.gms.common.internal.Constants
 import com.google.android.gms.location.*
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
@@ -41,6 +46,9 @@ class MainActivity : AppCompatActivity() {
 
     private val FINE_LOCATION_ACCESS_REQUEST_CODE = 10001
 
+    private lateinit var channel: NotificationChannel
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -82,11 +90,20 @@ class MainActivity : AppCompatActivity() {
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
+        createChan()
+
         enableUserLocation()
         requestLoc()
-
-
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createChan(){
+        val imp = NotificationManager.IMPORTANCE_HIGH
+        channel = NotificationChannel("com.example.sadge.loci","loc_noti",imp)
+        channel.description = "Notifies about location."
+    }
+
+
 
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults:
@@ -104,6 +121,35 @@ class MainActivity : AppCompatActivity() {
                 finish()
             }
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @SuppressLint("MissingPermission")
+    private fun addGeofence(loci: Location) {
+        val pi = PendingIntent.getBroadcast(
+            applicationContext,
+            1,
+            Intent(this, BroReceiver::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        LocationServices.getGeofencingClient(this)
+            .addGeofences(
+                generateRequest(loci), pi
+            ).addOnSuccessListener {
+                Log.i("Geof", "Geofence added")
+            }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun generateRequest(loci: Location): GeofencingRequest {
+        val mordo = Geofence.Builder().setExpirationDuration(Geofence.NEVER_EXPIRE)
+            .setRequestId(LocalDate.now().toString())
+            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+            .setCircularRegion(loci.latitude, loci.longitude, 500f).build()
+        return GeofencingRequest.Builder()
+            .addGeofence(mordo)
+            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            .build()
     }
 
     private fun takePhoto() {
@@ -133,9 +179,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    Shared.location?.let {
-                        addGeofence(it)
-                    }
+
                     savedUri = Uri.fromFile(photoFile)
                     val msg = "Photo capture succeeded: $savedUri"
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
@@ -145,6 +189,9 @@ class MainActivity : AppCompatActivity() {
                         "" + (Shared.location?.latitude
                             ?: "dupa") + " " + (Shared.location?.longitude ?: "dupcia")
                     )
+                    Shared.location?.let {
+                        addGeofence(it)
+                    }
                     val intent = Intent(applicationContext, AddCommentActivity::class.java)
                     intent.putExtra("photoUri", savedUri.toString())
                     startActivity(intent)
@@ -152,35 +199,6 @@ class MainActivity : AppCompatActivity() {
             })
     }
 
-    @SuppressLint("MissingPermission")
-    private fun addGeofence(loci: Location) {
-        val pi = PendingIntent.getBroadcast(
-            applicationContext,
-            1,
-            Intent(
-                this,
-                BroReceiver::class.java
-            ),
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        LocationServices.getGeofencingClient(this)
-            .addGeofences(
-                generateRequest(loci), pi
-            ).addOnSuccessListener {
-                Log.i("Geofence", "Geofence added")
-            }
-    }
-
-    private fun generateRequest(loci: Location): GeofencingRequest {
-        val mordo = Geofence.Builder().setExpirationDuration(Geofence.NEVER_EXPIRE)
-            .setRequestId(LocalDate.now().toString())
-            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-            .setCircularRegion(loci.latitude, loci.longitude, 500f).build()
-        return GeofencingRequest.Builder()
-            .addGeofence(mordo)
-            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-            .build()
-    }
     private fun enableUserLocation() {
         if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             return

@@ -10,14 +10,14 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 
 
+@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
 class BroReceiver : BroadcastReceiver() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context?, intent: Intent?) {
-        Log.d("wejszlo","onReceive")
         val notificationId = 69
         val notificationManager =
             context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -35,13 +35,13 @@ class BroReceiver : BroadcastReceiver() {
         }
         notificationManager.createNotificationChannel(mChannel)
         val builder: NotificationCompat.Builder = NotificationCompat.Builder(context, channelId)
-//            .setSmallIcon(R.drawable.)
-            .setContentTitle("Flashback")
-            .setContentText("Remember that?")
+            .setSmallIcon(R.drawable.sym_def_app_icon)
+            .setContentTitle("You have been here before!")
+            .setContentText("Welcome back ;)")
 
-        val resultIntent = Intent(context, MainActivity::class.java)
+        val resultIntent = Intent(context, PhotosActivity::class.java)
         val stackBuilder: TaskStackBuilder = TaskStackBuilder.create(context)
-        stackBuilder.addParentStack(MainActivity::class.java)
+        stackBuilder.addParentStack(PhotosActivity::class.java)
         stackBuilder.addNextIntent(resultIntent)
         val resultPendingIntent: PendingIntent =
             stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT)
