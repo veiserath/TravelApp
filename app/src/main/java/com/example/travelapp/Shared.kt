@@ -4,7 +4,7 @@ import android.graphics.Color
 import android.location.Location
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.lifecycle.ViewModelProvider
+import com.example.travelapp.data.PhotoDatabase
 
 object Shared {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -12,5 +12,5 @@ object Shared {
     var textColor: Int = Color.BLUE
     var textSize: Float = 80F
     var radius: Float = 1000F
-    var mPhotoViewModel: ViewModelProvider? = null
+    var database:PhotoDatabase? = null
 }

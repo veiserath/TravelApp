@@ -10,14 +10,18 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import com.google.android.gms.location.GeofencingEvent
+import kotlin.concurrent.thread
 
 
 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
 class CustomBroadcastReceiver : BroadcastReceiver() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context?, intent: Intent?) {
+        Log.i("broadcast","wejszlo")
         val notificationId = 1
         val notificationManager =
             context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -39,13 +43,31 @@ class CustomBroadcastReceiver : BroadcastReceiver() {
             .setContentTitle("You have been here before!")
             .setContentText("Welcome back ;)")
 
-        val resultIntent = Intent(context, PhotosActivity::class.java)
-        val stackBuilder: TaskStackBuilder = TaskStackBuilder.create(context)
-        stackBuilder.addParentStack(PhotosActivity::class.java)
-        stackBuilder.addNextIntent(resultIntent)
-        val resultPendingIntent: PendingIntent =
-            stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT)
-        builder.setContentIntent(resultPendingIntent)
-        notificationManager.notify(notificationId, builder.build())
+        val geoEvent = GeofencingEvent.fromIntent(intent)
+        if (geoEvent.hasError()) {
+            return
+        }
+
+        val trigger = geoEvent.triggeringGeofences[0].requestId
+        Log.i("trig", trigger)
+        thread {
+            Log.i("wchodz w threadaa", trigger)
+            Log.i("database", Shared.database.toString())
+            Log.i("dao",Shared.database?.photoDao.toString())
+            Log.i("readAllData",Shared.database?.photoDao?.readAllData().toString())
+            Shared.database?.photoDao?.selectByUri(trigger)?.let {
+                Log.i("bazka", trigger)
+                val resultIntent = Intent(context, PhotoDetailActivity::class.java)
+                resultIntent.putExtra("photoUri", trigger)
+                resultIntent.putExtra("comment",it.comment)
+                val stackBuilder: TaskStackBuilder = TaskStackBuilder.create(context)
+                stackBuilder.addParentStack(AddCommentActivity::class.java)
+                stackBuilder.addNextIntent(resultIntent)
+                val resultPendingIntent: PendingIntent =
+                    stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT)
+                builder.setContentIntent(resultPendingIntent)
+                notificationManager.notify(notificationId, builder.build())
+            }
+        }
     }
 }

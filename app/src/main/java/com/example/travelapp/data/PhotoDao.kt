@@ -9,8 +9,9 @@ import androidx.room.Query
 @Dao
 interface PhotoDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun addUser(photoModel: PhotoModel)
-
+    fun addUser(photoModel: PhotoModel)
     @Query("SELECT * FROM photo_table ORDER BY id ASC")
-    fun readAllData(): LiveData<List<PhotoModel>>
+    fun readAllData(): List<PhotoModel>
+    @Query("SELECT * FROM photo_table WHERE photoUri= :photoUri")
+    fun selectByUri(photoUri: String): PhotoModel
 }

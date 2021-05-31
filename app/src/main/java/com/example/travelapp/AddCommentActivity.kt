@@ -1,29 +1,33 @@
 package com.example.travelapp
 
+import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.location.Address
 import android.location.Geocoder
+import android.location.Location
 import android.media.ExifInterface
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
 import com.example.travelapp.data.PhotoModel
-import com.example.travelapp.data.PhotoViewModel
 import com.example.travelapp.databinding.ActivityAddCommentBinding
+import com.google.android.gms.location.Geofence
+import com.google.android.gms.location.GeofencingRequest
+import com.google.android.gms.location.LocationServices
 import kotlinx.android.synthetic.main.activity_add_comment.*
 import java.time.LocalDate
 import java.util.*
+import kotlin.concurrent.thread
 
 
 class AddCommentActivity : AppCompatActivity() {
 
-    private lateinit var mPhotoViewModel: PhotoViewModel
     private lateinit var globalPhotoUri: String
     private val binding by lazy { ActivityAddCommentBinding.inflate(layoutInflater) }
 
@@ -33,7 +37,6 @@ class AddCommentActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         extractIntentData()
-        mPhotoViewModel = ViewModelProvider(this).get(PhotoViewModel::class.java)
 
         addCommentButton.setOnClickListener {
             val comment = addCommentEditText.text
@@ -62,7 +65,6 @@ class AddCommentActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun insertItemToTheDatabase(photoUri: String, comment: String) {
-
         val geoCoder = Geocoder(baseContext, Locale.getDefault())
         var addressDescription = ""
         addressDescription = if (Shared.location != null) {
@@ -71,8 +73,6 @@ class AddCommentActivity : AppCompatActivity() {
         } else {
             "Not available"
         }
-
-
         val user = PhotoModel(
             0,
             photoUri,
@@ -80,12 +80,41 @@ class AddCommentActivity : AppCompatActivity() {
             addressDescription,
             comment
         )
-        mPhotoViewModel.addUser(user)
+        thread{Shared.database?.photoDao?.addUser(user)
+            Shared.location?.let { addGeofence(it,globalPhotoUri) }
+        }
         Toast.makeText(this, "Added photo!", Toast.LENGTH_LONG).show()
         val intent = Intent(applicationContext, MainActivity::class.java)
         startActivity(intent)
     }
+    @RequiresApi(Build.VERSION_CODES.O)
+    @SuppressLint("MissingPermission")
+    private fun addGeofence(location: Location, photoUri: String) {
+        val pi = PendingIntent.getBroadcast(
+            applicationContext,
+            1,
+            Intent(this, CustomBroadcastReceiver::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        LocationServices.getGeofencingClient(this)
+            .addGeofences(
+                generateRequest(location,photoUri), pi
+            ).addOnSuccessListener {
+                Log.i("Geofence", "Geofence added")
+            }
+    }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun generateRequest(loci: Location, photoUri: String): GeofencingRequest {
+        val geofence = Geofence.Builder().setExpirationDuration(Geofence.NEVER_EXPIRE)
+            .setRequestId(photoUri)
+            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+            .setCircularRegion(loci.latitude, loci.longitude, Shared.radius).build()
+        return GeofencingRequest.Builder()
+            .addGeofence(geofence)
+            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            .build()
+    }
     private fun setImage(photoUri: String) {
         val bitmap = BitmapFactory.decodeFile(photoUri)
         val ei = ExifInterface(photoUri)

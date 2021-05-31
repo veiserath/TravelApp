@@ -3,13 +3,10 @@ package com.example.travelapp
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Location
 import android.net.Uri
 import android.os.Build
 import android.os.Looper
@@ -21,8 +18,7 @@ import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.lifecycle.ViewModelProvider
-import com.example.travelapp.data.PhotoViewModel
+import com.example.travelapp.data.PhotoDatabase
 import com.example.travelapp.databinding.ActivityMainBinding
 import com.google.android.gms.location.*
 import java.io.File
@@ -40,15 +36,14 @@ class MainActivity : AppCompatActivity() {
     lateinit var savedUri: Uri
     private val locClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
     private lateinit var channel: NotificationChannel
-
-    private lateinit var mPhotoViewModel: PhotoViewModel
-
     @RequiresApi(Build.VERSION_CODES.O)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
-        mPhotoViewModel = ViewModelProvider(this).get(PhotoViewModel::class.java)
+        Shared.database = PhotoDatabase.open(applicationContext)
+
 
         // Request camera and tracking permissions
         if (allPermissionsGranted()) {
@@ -115,39 +110,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    @SuppressLint("MissingPermission")
-    private fun addGeofence(loci: Location) {
-        val pi = PendingIntent.getBroadcast(
-            applicationContext,
-            1,
-            Intent(this, CustomBroadcastReceiver::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        LocationServices.getGeofencingClient(this)
-            .addGeofences(
-                generateRequest(loci), pi
-            ).addOnSuccessListener {
-//                Log.i("Geofence", "Geofence added")
-            }
-    }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun generateRequest(loci: Location): GeofencingRequest {
-        val uri = savedUri.toString()
-        val splitUri = uri.split("///")[1]
-        val newPhotoUri = splitUri.split(".jpg")
-        val editedPhotoUri = newPhotoUri[0] + "edited" + ".jpeg"
-
-        val geofence = Geofence.Builder().setExpirationDuration(Geofence.NEVER_EXPIRE)
-            .setRequestId(editedPhotoUri)
-            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-            .setCircularRegion(loci.latitude, loci.longitude, Shared.radius).build()
-        return GeofencingRequest.Builder()
-            .addGeofence(geofence)
-            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-            .build()
-    }
 
     private fun takePhoto() {
         // Get a stable reference of the modifiable image capture use case
@@ -187,9 +150,6 @@ class MainActivity : AppCompatActivity() {
 //                        "" + (Shared.location?.latitude
 //                            ?: "latitude") + " " + (Shared.location?.longitude ?: "longitude")
 //                    )
-                    Shared.location?.let {
-                        addGeofence(it)
-                    }
                     val intent = Intent(applicationContext, AddCommentActivity::class.java)
                     intent.putExtra("photoUri", savedUri.toString())
                     startActivity(intent)
@@ -274,6 +234,7 @@ class MainActivity : AppCompatActivity() {
             override fun onLocationResult(p0: LocationResult) {
                 super.onLocationResult(p0)
                 Shared.location = p0.lastLocation
+//                Log.i("current location",Shared.location.toString())
             }
         }, Looper.getMainLooper())
     }
