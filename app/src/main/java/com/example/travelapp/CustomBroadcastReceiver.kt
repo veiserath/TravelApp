@@ -1,6 +1,6 @@
 package com.example.travelapp
 
-import android.R
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -15,10 +15,10 @@ import androidx.core.app.NotificationCompat
 
 
 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-class BroReceiver : BroadcastReceiver() {
+class CustomBroadcastReceiver : BroadcastReceiver() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context?, intent: Intent?) {
-        val notificationId = 69
+        val notificationId = 1
         val notificationManager =
             context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "geo"
@@ -35,7 +35,7 @@ class BroReceiver : BroadcastReceiver() {
         }
         notificationManager.createNotificationChannel(mChannel)
         val builder: NotificationCompat.Builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.sym_def_app_icon)
+            .setSmallIcon(R.drawable.photo_icon)
             .setContentTitle("You have been here before!")
             .setContentText("Welcome back ;)")
 

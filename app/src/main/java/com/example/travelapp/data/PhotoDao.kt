@@ -10,7 +10,7 @@ import androidx.room.Query
 interface PhotoDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun addUser(photoModel: PhotoModel)
+
     @Query("SELECT * FROM photo_table ORDER BY id ASC")
     fun readAllData(): LiveData<List<PhotoModel>>
-
 }

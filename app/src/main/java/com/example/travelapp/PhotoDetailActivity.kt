@@ -6,18 +6,26 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.android.synthetic.main.activity_edit_photo.*
+import com.example.travelapp.databinding.ActivityPhotoDetailBinding
+import kotlinx.android.synthetic.main.activity_photo_detail.*
 
 
-class EditPhotoActivity : AppCompatActivity() {
+class PhotoDetailActivity : AppCompatActivity() {
+
+    private val binding by lazy { ActivityPhotoDetailBinding.inflate(layoutInflater) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_edit_photo)
+        setContentView(binding.root)
+        getIntentData()
+    }
+
+    private fun getIntentData() {
         if (intent.getSerializableExtra("photoUri") != null) {
             val photoUri = intent.getSerializableExtra("photoUri") as String
             setImage(photoUri)
             val comment = intent.getSerializableExtra("comment") as String
-            textView.text = comment
+            binding.textView.text = comment
         }
     }
 
@@ -38,7 +46,7 @@ class EditPhotoActivity : AppCompatActivity() {
             else -> bitmap
         }
 
-        imageView.setImageBitmap(rotatedBitmap)
+        binding.imageView.setImageBitmap(rotatedBitmap)
     }
 
     private fun rotateImage(source: Bitmap, angle: Float): Bitmap? {

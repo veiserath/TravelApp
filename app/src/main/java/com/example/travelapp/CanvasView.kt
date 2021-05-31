@@ -10,6 +10,8 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.View
 import androidx.annotation.RequiresApi
+import java.io.FileOutputStream
+import java.io.IOException
 import java.time.LocalDate
 
 class CanvasView(
@@ -17,31 +19,37 @@ class CanvasView(
     attributeSet: AttributeSet
 ) : View(context, attributeSet) {
 
-    lateinit var mBitmap: Bitmap
+    lateinit var bitmap: Bitmap
     var text: String? = null
+    lateinit var filename: String
 
-    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("DrawAllocation")
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onDraw(canvas: Canvas?) {
         canvas ?: return
-        mBitmap = Bitmap.createScaledBitmap(mBitmap, width, height, true)
+        bitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
         val paint = Paint(Color.GRAY)
-        canvas.drawBitmap(mBitmap, 0f, 0f, paint)
-        val buff = Canvas(mBitmap)
+        canvas.drawBitmap(bitmap, 0f, 0f, paint)
+        val canvas1 = Canvas(bitmap)
         paint.strokeWidth = 10f
-        paint.textSize = 60f //wez z shared.size
-        var col = Color.BLACK //wez z shared.color
+        paint.textSize = Shared.textSize
+        var col = Shared.textColor
         paint.color = col
         text?.let {
-            buff.drawText(it, 10f, height / 4f, paint)
-            canvas.drawText(it, 10f, height / 4f, paint)
+            canvas1.drawText(it, 5f, height - height / 4f + 120F, paint)
         }
         val date = LocalDate.now().toString()
-        buff.drawText( date, 10f,  height - height / 4f + 30f + 100f,paint)
-        canvas.drawText( date, 10f,  height - height / 4f + 30f + 100f,paint)
+        canvas1.drawText(date, 5f, height / 16F, paint)
+        saveImage()
     }
 
-    fun loadBitmapFromView(): Bitmap {
-        return mBitmap
+    fun saveImage() {
+        try {
+            FileOutputStream(filename).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 }

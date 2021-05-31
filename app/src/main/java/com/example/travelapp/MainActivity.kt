@@ -21,37 +21,33 @@ import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import com.google.android.gms.common.internal.Constants
+import androidx.lifecycle.ViewModelProvider
+import com.example.travelapp.data.PhotoViewModel
+import com.example.travelapp.databinding.ActivityMainBinding
 import com.google.android.gms.location.*
-import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.text.SimpleDateFormat
-import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.ExecutorService
 
 class MainActivity : AppCompatActivity() {
 
-
+    private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
     private var imageCapture: ImageCapture? = null
-
     private lateinit var outputDirectory: File
     private lateinit var cameraExecutor: ExecutorService
-
     var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
     lateinit var savedUri: Uri
-
     private val locClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
-
     private val FINE_LOCATION_ACCESS_REQUEST_CODE = 10001
-
     private lateinit var channel: NotificationChannel
+
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(binding.root)
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -61,46 +57,42 @@ class MainActivity : AppCompatActivity() {
                 this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
             )
         }
+        setupOnClickListeners()
+        outputDirectory = getOutputDirectory()
+        cameraExecutor = Executors.newSingleThreadExecutor()
+        setupNotificationChannel()
+        enableUserLocation()
+        startTrackingLocation()
+    }
 
+    private fun setupOnClickListeners() {
         // Set up the listener for take photo button
-        camera_capture_button.setOnClickListener {
+        binding.cameraCaptureButton.setOnClickListener {
             takePhoto()
-
         }
-        settings_button.setOnClickListener {
-            var intent = Intent(applicationContext, SettingsActivity::class.java)
-            intent.putExtra("index", 0)
+        binding.settingsButton.setOnClickListener {
+            val intent = Intent(applicationContext, SettingsActivity::class.java)
             startActivity(intent)
         }
-        flip_camera.setOnClickListener {
+        binding.flipCamera.setOnClickListener {
             cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) {
                 CameraSelector.DEFAULT_FRONT_CAMERA
             } else {
                 CameraSelector.DEFAULT_BACK_CAMERA
             }
-
             startCamera()
         }
-        all_photos_button.setOnClickListener {
+        binding.allPhotosButton.setOnClickListener {
             val intent = Intent(applicationContext, PhotosActivity::class.java)
             startActivity(intent)
         }
-
-        outputDirectory = getOutputDirectory()
-
-        cameraExecutor = Executors.newSingleThreadExecutor()
-
-        createChan()
-
-        enableUserLocation()
-        requestLoc()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun createChan(){
-        val imp = NotificationManager.IMPORTANCE_HIGH
-        channel = NotificationChannel("com.example.sadge.loci","loc_noti",imp)
-        channel.description = "Notifies about location."
+    private fun setupNotificationChannel(){
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        channel = NotificationChannel("myChannel","location notifications",importance)
+        channel.description = "Notifications about photos taken in this location."
     }
 
 
@@ -129,25 +121,30 @@ class MainActivity : AppCompatActivity() {
         val pi = PendingIntent.getBroadcast(
             applicationContext,
             1,
-            Intent(this, BroReceiver::class.java),
+            Intent(this, CustomBroadcastReceiver::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT
         )
         LocationServices.getGeofencingClient(this)
             .addGeofences(
                 generateRequest(loci), pi
             ).addOnSuccessListener {
-                Log.i("Geof", "Geofence added")
+//                Log.i("Geofence", "Geofence added")
             }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun generateRequest(loci: Location): GeofencingRequest {
-        val mordo = Geofence.Builder().setExpirationDuration(Geofence.NEVER_EXPIRE)
-            .setRequestId(LocalDate.now().toString())
+        val uri = savedUri.toString()
+        val splitUri = uri.split("///")[1]
+        val newPhotoUri = splitUri.split(".jpg")
+        val editedPhotoUri = newPhotoUri[0] + "edited" + ".jpeg"
+
+        val geofence = Geofence.Builder().setExpirationDuration(Geofence.NEVER_EXPIRE)
+            .setRequestId(editedPhotoUri)
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-            .setCircularRegion(loci.latitude, loci.longitude, 500f).build()
+            .setCircularRegion(loci.latitude, loci.longitude, Shared.radius).build()
         return GeofencingRequest.Builder()
-            .addGeofence(mordo)
+            .addGeofence(geofence)
             .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
             .build()
     }
@@ -178,17 +175,18 @@ class MainActivity : AppCompatActivity() {
                     Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
                 }
 
+                @RequiresApi(Build.VERSION_CODES.O)
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
 
                     savedUri = Uri.fromFile(photoFile)
                     val msg = "Photo capture succeeded: $savedUri"
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, msg)
-                    Log.d(
-                        TAG,
-                        "" + (Shared.location?.latitude
-                            ?: "dupa") + " " + (Shared.location?.longitude ?: "dupcia")
-                    )
+//                    Log.d(TAG, msg)
+//                    Log.d(
+//                        TAG,
+//                        "" + (Shared.location?.latitude
+//                            ?: "latitude") + " " + (Shared.location?.longitude ?: "longitude")
+//                    )
                     Shared.location?.let {
                         addGeofence(it)
                     }
@@ -225,7 +223,7 @@ class MainActivity : AppCompatActivity() {
             val preview = Preview.Builder()
                 .build()
                 .also {
-                    it.setSurfaceProvider(viewFinder.surfaceProvider)
+                    it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
                 }
 
             imageCapture = ImageCapture.Builder()
@@ -266,7 +264,7 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
     }
 
-    private fun requestLoc() {
+    private fun startTrackingLocation() {
 
         if (ActivityCompat.checkSelfPermission(
                 this,

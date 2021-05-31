@@ -1,3 +1,34 @@
 <resources>
     <string name="app_name">TravelApp</string>
+    <string name="geofence_radius">Geofence radius</string>
+    <string name="color_picker">Color Picker</string>
+    <string name="save">Save</string>
+    <string name="text_size">Text size</string>
+    <string name="type_your_comment">Type your comment</string>
+    <string name="add_comment">Add comment</string>
+
+    <string-array name="Colors">
+        <item>Black</item>
+        <item>Red</item>
+        <item>White</item>
+        <item>Blue</item>
+        <item>Yellow</item>
+    </string-array>
+
+
+    <string-array name="TextSize">
+        <item>50F</item>
+        <item>60F</item>
+        <item>80F</item>
+    </string-array>
+
+    <string-array name="Radiuses">
+        <item>0.5 km</item>
+        <item>1.0 km</item>
+        <item>1.5 km</item>
+        <item>2.0 km</item>
+        <item>5.0 km</item>
+    </string-array>
+
+
 </resources>

@@ -21,10 +21,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TravelApp">
         <receiver
-            android:name=".BroReceiver"
+            android:name=".CustomBroadcastReceiver"
             android:enabled="true"
             android:exported="true" />
-        <activity android:name=".EditPhotoActivity"></activity>
+        <activity android:name=".PhotoDetailActivity"></activity>
         <activity android:name=".SettingsActivity" />
         <activity android:name=".AddCommentActivity" />
         <activity android:name=".PhotosActivity" />
