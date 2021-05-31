@@ -39,17 +39,18 @@ class MainActivity : AppCompatActivity() {
     var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     lateinit var savedUri: Uri
     private val locClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
-    private val FINE_LOCATION_ACCESS_REQUEST_CODE = 10001
     private lateinit var channel: NotificationChannel
 
-
+    private lateinit var mPhotoViewModel: PhotoViewModel
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
-        // Request camera permissions
+        mPhotoViewModel = ViewModelProvider(this).get(PhotoViewModel::class.java)
+
+        // Request camera and tracking permissions
         if (allPermissionsGranted()) {
             startCamera()
         } else {
@@ -61,7 +62,6 @@ class MainActivity : AppCompatActivity() {
         outputDirectory = getOutputDirectory()
         cameraExecutor = Executors.newSingleThreadExecutor()
         setupNotificationChannel()
-        enableUserLocation()
         startTrackingLocation()
     }
 
@@ -107,7 +107,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(
                     this,
-                    "Permissions not granted by the user.",
+                    "Location (background) or camera permissions not granted by the user.",
                     Toast.LENGTH_SHORT
                 ).show()
                 finish()
@@ -197,21 +197,6 @@ class MainActivity : AppCompatActivity() {
             })
     }
 
-    private fun enableUserLocation() {
-        if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            return
-        }
-        else {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.ACCESS_FINE_LOCATION)) {
-                ActivityCompat.requestPermissions(this,Array(5) {Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION_ACCESS_REQUEST_CODE)
-            } else {
-                ActivityCompat.requestPermissions(this,Array(5) {Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION_ACCESS_REQUEST_CODE)
-            }
-        }
-    }
-
-
-
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
@@ -265,17 +250,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startTrackingLocation() {
-
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
+            ) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(
+                this,
+                "Location (background) or camera permissions not granted by the user.",
+                Toast.LENGTH_SHORT
+            ).show()
+            finish()
         }
+
         val request = LocationRequest.create().apply {
             fastestInterval = 500L
             interval = 1000L
@@ -293,6 +282,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "CameraXBasic"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+        @RequiresApi(Build.VERSION_CODES.Q)
+        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA,Manifest.permission.ACCESS_BACKGROUND_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION)
     }
 }

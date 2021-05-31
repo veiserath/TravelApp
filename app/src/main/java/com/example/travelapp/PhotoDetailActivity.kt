@@ -7,21 +7,21 @@ import android.media.ExifInterface
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.travelapp.databinding.ActivityPhotoDetailBinding
-import kotlinx.android.synthetic.main.activity_photo_detail.*
+
 
 
 class PhotoDetailActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivityPhotoDetailBinding.inflate(layoutInflater) }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         getIntentData()
+
     }
 
     private fun getIntentData() {
-        if (intent.getSerializableExtra("photoUri") != null) {
+        if (intent.getSerializableExtra("photoUri") != null || intent.getSerializableExtra("comment") != null) {
             val photoUri = intent.getSerializableExtra("photoUri") as String
             setImage(photoUri)
             val comment = intent.getSerializableExtra("comment") as String

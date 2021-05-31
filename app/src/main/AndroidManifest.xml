@@ -24,6 +24,11 @@
             android:name=".CustomBroadcastReceiver"
             android:enabled="true"
             android:exported="true" />
+<!--        <service-->
+<!--            android:name=".RequestLocationService"-->
+<!--            android:enabled="true"-->
+<!--            android:exported="false">-->
+<!--        </service>-->
         <activity android:name=".PhotoDetailActivity"></activity>
         <activity android:name=".SettingsActivity" />
         <activity android:name=".AddCommentActivity" />

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.location.Address
 import android.location.Geocoder
 import android.media.ExifInterface
 import android.os.Build
@@ -63,14 +64,20 @@ class AddCommentActivity : AppCompatActivity() {
     fun insertItemToTheDatabase(photoUri: String, comment: String) {
 
         val geoCoder = Geocoder(baseContext, Locale.getDefault())
-        val address =
-            geoCoder.getFromLocation(Shared.location!!.latitude, Shared.location!!.longitude, 1)
+        var addressDescription = ""
+        addressDescription = if (Shared.location != null) {
+            val address = geoCoder.getFromLocation(Shared.location!!.latitude, Shared.location!!.longitude, 1)
+            "" + address[0].locality + ", " + address[0].countryName
+        } else {
+            "Not available"
+        }
+
 
         val user = PhotoModel(
             0,
             photoUri,
             LocalDate.now().toString(),
-            "" + address[0].locality + ", " + address[0].countryName,
+            addressDescription,
             comment
         )
         mPhotoViewModel.addUser(user)
@@ -100,10 +107,13 @@ class AddCommentActivity : AppCompatActivity() {
     }
 
     private fun getLocationFromGPSCoordinates(): String {
-        val geoCoder = Geocoder(baseContext, Locale.getDefault())
-        val address =
-            geoCoder.getFromLocation(Shared.location!!.latitude, Shared.location!!.longitude, 1)
-        return "" + address[0].locality + ", " + address[0].countryName
+        if (Shared.location != null) {
+            val geoCoder = Geocoder(baseContext, Locale.getDefault())
+            val address =
+                geoCoder.getFromLocation(Shared.location!!.latitude, Shared.location!!.longitude, 1)
+            return "" + address[0].locality + ", " + address[0].countryName
+        }
+        return "Not available."
     }
 
     private fun rotateImage(source: Bitmap, angle: Float): Bitmap? {
