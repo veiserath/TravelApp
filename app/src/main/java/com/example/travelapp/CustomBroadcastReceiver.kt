@@ -21,7 +21,6 @@ import kotlin.concurrent.thread
 class CustomBroadcastReceiver : BroadcastReceiver() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context?, intent: Intent?) {
-        Log.i("broadcast","wejszlo")
         val notificationId = 1
         val notificationManager =
             context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -49,14 +48,8 @@ class CustomBroadcastReceiver : BroadcastReceiver() {
         }
 
         val trigger = geoEvent.triggeringGeofences[0].requestId
-        Log.i("trig", trigger)
         thread {
-            Log.i("wchodz w threadaa", trigger)
-            Log.i("database", Shared.database.toString())
-            Log.i("dao",Shared.database?.photoDao.toString())
-            Log.i("readAllData",Shared.database?.photoDao?.readAllData().toString())
             Shared.database?.photoDao?.selectByUri(trigger)?.let {
-                Log.i("bazka", trigger)
                 val resultIntent = Intent(context, PhotoDetailActivity::class.java)
                 resultIntent.putExtra("photoUri", trigger)
                 resultIntent.putExtra("comment",it.comment)
